@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<body>
+<style>
+      #googleMap {
+        height: 100%;
+      }
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+
+<div id="googleMap"></div>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBbwoDsIE_NKlF_mxyIruuTaHoFoU9zse0&callback=initialize"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
+<h2 class="form-signin-heading">Introduce un ave</h2>
+
+<select style="width: 280px" id="birdList" name="birdList" role="select" method="post">
+  <option value="Barnacle goose">Swainson's Hawks</option>
+  <option value="Broad-winged Hawk">Broad-winged Hawk</option>
+  <option value="Pandion haliaetus Osprey">Pandion haliaetus Osprey</option>
+  <option value="Swainson's Hawks">Barnacle goose</option>
+  <option value="Marc Bechard Hawks">Marc Bechard Hawks </option>
+  <option value="red-backed shrikes">red-backed shrikes</option>
+  <option value="long-legged buzzards">long-legged buzzards</option>
+</select>
+<h2 class="form-signin-heading">Elije un año</h2>
+<select style="width: 280px" id="yearList" name="yearList" onChange="google.maps.event.addDomListener(window, 'load', initialize(lat, lon, date, year, MY_MAPTYPE_ID));"></select>
+</body>
+<script>
+
+var MY_MAPTYPE_ID = 'custom_style';
+var lat = {{ lat|tojson }};
+var lon = {{ lon|tojson }};
+var date = {{ date|tojson}};
+var year = {{ year|tojson}};
+
+
+function populate(s2, year){
+	var newYears = Array.from(new Set(year))
+	var s2 = document.getElementById(s2);
+  var i;
+  for(i = s2.options.length - 1 ; i >= 0 ; i--){
+        s2.remove(i);
+  }
+	for (i = 0; i < newYears.length; i++) {
+		var newOption = document.createElement("option");
+		newOption.value = newYears[i]
+		newOption.innerHTML = newYears[i]
+		s2.options.add(newOption);
+
+	}
+}
+populate("yearList", year)
+function initialize(lat, lon, date, year, MY_MAPTYPE_ID) {
+
+      var yearSelect = document.getElementById("yearList");
+		  var selectedYear = yearSelect.options[yearSelect.selectedIndex].text;
+
+
+     	window.map = new google.maps.Map(document.getElementById('googleMap'), {
+           mapTypeId: google.maps.MapTypeId.ROADMAP,
+           scrollwheel: false
+        });
+
+        var infowindow = new google.maps.InfoWindow();
+        var flightPlanCoordinates = [];
+        var bounds = new google.maps.LatLngBounds();
+
+        for (i = 0; i < lat.length; i++) {
+        	if(year[i] == selectedYear){
+	            marker = new google.maps.Marker({
+	                position: new google.maps.LatLng(lat[i], lon[i]),
+	                map: map
+	            });
+	            flightPlanCoordinates.push(marker.getPosition());
+	            bounds.extend(marker.position);
+
+	            
+	            
+	            google.maps.event.addListener(marker, 'click', (function (marker, i) {
+	                return function () {
+	                    infowindow.setContent(date[i]);
+	                    infowindow.open(map, marker);
+	                }
+	            })(marker, i));
+        	}
+        }
+
+            map.fitBounds(bounds);
+
+            var flightPath = new google.maps.Polyline({
+                map: map,
+                path: flightPlanCoordinates,
+                strokeColor: "#FF0000",
+                strokeOpacity: 1.0,
+                strokeWeight: 2
+            });
+
+	}
+
+    $('#birdList').change(function() {
+        $.ajax({
+            url: '/showBirds',
+            data: {'bird' : $(this).val()},
+            type: 'POST',
+            success: function(response) {
+                lat = response.lat;
+                lon = response.lon;
+                date = response.date;
+                year = response.year;
+                var MY_MAPTYPE_ID = 'custom_style';
+                populate("yearList", year);
+                google.maps.event.addDomListener(window, 'load', initialize(lat, lon, date, year, MY_MAPTYPE_ID));
+            },
+            error: function(error) {
+                console.log(error);
+            }
+        });
+    });
+    google.maps.event.addDomListener(window, 'load', initialize(lat, lon, date, year, MY_MAPTYPE_ID));
+</script>
+</html>

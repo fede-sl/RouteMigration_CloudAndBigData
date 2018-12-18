@@ -1,0 +1,4 @@
+Para ejecutar el servidor flask es necesario:
+    --Instalar python y flask entre otros paquetes.
+    --Escribir "python py_script.py" en un terminal abierto en la carpeta proyecto
+    --Pegar en el navegador la direccion que se mostrara en pantalla.
